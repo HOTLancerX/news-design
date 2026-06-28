@@ -1,0 +1,8 @@
+{
+  "name": "com.system.news-design",
+  "version": "1.2.0",
+  "private": true,
+  "dependencies": {
+    "html2canvas": "^1.4.1"
+  }
+}
