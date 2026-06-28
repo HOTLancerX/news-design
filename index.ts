@@ -41,14 +41,6 @@ export function register() {
             parent: "news-design",
             position: 2,
         },
-        {
-            key: "news-design-create",
-            label: "Create Design",
-            icon: "solar:pen-bold",
-            slug: "news-design/create",
-            parent: "news-design",
-            position: 3,
-        },
     ], PLUGINS.nx);
 
     // ─── Admin pages ────────────────────────────────────────────────────────
@@ -74,7 +66,7 @@ export function register() {
             path: NewsDesignBoxSettings,
         },
         {
-            key: "news-design/create",
+            key: "news-design",
             label: "Create News Design",
             type: "",
             slug: "create",

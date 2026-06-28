@@ -3,6 +3,8 @@ import connectDB from "@/lib/mongodb";
 import Post from "@/models/post";
 import PostInfo from "@/models/post_info";
 import User from "@/models/Users";
+import Cat from "@/models/cat";
+import CatInfo from "@/models/cat_info";
 import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
@@ -28,15 +30,22 @@ export async function GET(req: NextRequest) {
 
         const postIds = posts.map((p) => p._id);
         const rawUserIds = [...new Set(posts.map((p) => p.userId).filter(Boolean))];
+        const catIds = [...new Set(posts.map((p) => p.category).filter(Boolean))];
 
         const userIds = rawUserIds.filter((id) => {
             try { return ObjectId.isValid(id); } catch { return false; }
         });
 
-        const [infoRecords, users] = await Promise.all([
+        const [infoRecords, users, cats, catInfoRecords] = await Promise.all([
             PostInfo.find({ postId: { $in: postIds } }).lean<any[]>(),
             userIds.length > 0
                 ? User.find({ _id: { $in: userIds.map((id) => new ObjectId(id)) } }).lean<any[]>()
+                : [],
+            catIds.length > 0
+                ? Cat.find({ _id: { $in: catIds } }).lean<any[]>()
+                : [],
+            catIds.length > 0
+                ? CatInfo.find({ catId: { $in: catIds } }).lean<any[]>()
                 : [],
         ]);
 
@@ -55,9 +64,20 @@ export async function GET(req: NextRequest) {
             });
         });
 
+        const catMap = new Map<string, { title: string; info: Record<string, string> }>();
+        cats.forEach((c) => {
+            catMap.set(String(c._id), { title: c.title ?? "", info: {} });
+        });
+        catInfoRecords.forEach((r) => {
+            const catId = String(r.catId);
+            const cat = catMap.get(catId);
+            if (cat) cat.info[r.name] = r.value ?? "";
+        });
+
         const result = posts.map((p) => {
             const info = infoMap.get(String(p._id)) ?? {};
             const user = p.userId ? userMap.get(p.userId) ?? { name: "", image: "" } : { name: "", image: "" };
+            const cat = p.category ? catMap.get(String(p.category)) ?? null : null;
 
             let images: string[] = [];
             try {
@@ -77,6 +97,10 @@ export async function GET(req: NextRequest) {
                 info,
                 user,
                 images,
+                category: cat ? {
+                    name: cat.title,
+                    color: cat.info["color"] || cat.info["category_color"] || "",
+                } : null,
             };
         });
 
