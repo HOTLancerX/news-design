@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCollection } from "@/lib/mongodb";
+import type { Document } from "mongodb";
 
 export const dynamic = "force-dynamic";
 
 const COLLECTION = "news_design_settings";
 const DOC_ID = "default";
+
+interface SettingsDoc extends Document {
+    _id: string;
+    logo: string;
+    primaryColor: string;
+    secondaryColor: string;
+    fontFamily: string;
+    fontSize: string;
+    lineHeight: string;
+    watermarkImage: string;
+    readMoreText: string;
+    updatedAt?: Date;
+}
 
 interface DefaultSettings {
     logo: string;
@@ -30,7 +44,7 @@ const DEFAULT_VALUES: DefaultSettings = {
 
 export async function GET() {
     try {
-        const col = await getCollection(COLLECTION);
+        const col = await getCollection<SettingsDoc>(COLLECTION);
         const doc = await col.findOne({ _id: DOC_ID });
         return NextResponse.json({ settings: doc ? { ...DEFAULT_VALUES, ...doc, _id: undefined } : DEFAULT_VALUES });
     } catch (err) {
@@ -44,7 +58,7 @@ export async function PUT(req: NextRequest) {
         const body = await req.json();
         const settings: DefaultSettings = { ...DEFAULT_VALUES, ...(body.settings ?? body) };
 
-        const col = await getCollection(COLLECTION);
+        const col = await getCollection<SettingsDoc>(COLLECTION);
         await col.updateOne(
             { _id: DOC_ID },
             { $set: { ...settings, updatedAt: new Date() } },

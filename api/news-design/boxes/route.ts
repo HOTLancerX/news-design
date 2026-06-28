@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCollection } from "@/lib/mongodb";
+import type { Document } from "mongodb";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,12 @@ interface BoxConfig {
     height: number;
 }
 
+interface BoxesDoc extends Document {
+    _id: string;
+    boxes: BoxConfig[];
+    updatedAt?: Date;
+}
+
 const DEFAULT_BOXES: BoxConfig[] = Array.from({ length: 10 }, (_, i) => ({
     id: i + 1,
     name: `Box ${i + 1}`,
@@ -38,7 +45,7 @@ const DEFAULT_BOXES: BoxConfig[] = Array.from({ length: 10 }, (_, i) => ({
 
 export async function GET() {
     try {
-        const col = await getCollection(COLLECTION);
+        const col = await getCollection<BoxesDoc>(COLLECTION);
         const doc = await col.findOne({ _id: DOC_ID });
         const boxes = doc?.boxes ?? DEFAULT_BOXES;
         return NextResponse.json({ boxes });
@@ -53,7 +60,7 @@ export async function PUT(req: NextRequest) {
         const body = await req.json();
         const boxes: BoxConfig[] = body.boxes ?? DEFAULT_BOXES;
 
-        const col = await getCollection(COLLECTION);
+        const col = await getCollection<BoxesDoc>(COLLECTION);
         await col.updateOne(
             { _id: DOC_ID },
             { $set: { boxes, updatedAt: new Date() } },
